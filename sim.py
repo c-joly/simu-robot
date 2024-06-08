@@ -9,6 +9,9 @@ from autograd.variable import Variable
 from scipy.integrate import solve_ivp
 from scipy.signal import place_poles
 
+
+###########
+# CONSTANTS
 HEIGHT = 700
 WIDTH = 700
 YELLOW = 10
@@ -18,19 +21,19 @@ RED = 8
 GREY=13
 GREEN = 11
 BLUE = 5
-filename = "rob_RRR.csv"
 
-robot = rob.Robot(filename)
-robot_grad = rob.Robot(filename)
-#robot = rob.Robot("rob_alien.csv")
-#robot = rob.Robot("rob_LR.csv")
-focus = 0
-#robot.joints.pop()
+# Load a robot
+filename = "rob_RRR.csv"
+robot = rob.Robot(filename) # Robot for display
+robot_grad = rob.Robot(filename) # Garbage for computing (and prevent display to be affected)
 
 ARM_WIDTH = robot.lMax/10 # to represent the robot's parts with a pretty width
 SCALE = min(HEIGHT,WIDTH)/2/(robot.lMax*1.1)
 CENTER = (WIDTH/2,HEIGHT/2)
 SIZE_CIRCLE = ARM_WIDTH*SCALE/4
+
+
+
 # Define the joint coordinates in a meshgrid format
 l  = []
 l_simple = []
@@ -57,12 +60,13 @@ q = [item.flatten() for item in q]
 
 print("Precomputing free space vizualisation - Please wait...")
 precomp_free = set()
+# Monte Carlo simulation
 for i in range(round(WIDTH*HEIGHT/10)):
-    for joint in robot.joints:
+    for joint in robot_grad.joints:
         m,M = joint.data["limits"]
         joint.value = m+random()*(M-m)
-    robot.compute_chain()
-    x,y,_ = robot.end
+    robot_grad.compute_chain()
+    x,y,_ = robot_grad.end
     x = round(CENTER[0]+x*SCALE)
     y = round(CENTER[1]-y*SCALE)
     precomp_free.add((x,y))
@@ -74,18 +78,17 @@ for i in range(round(WIDTH*HEIGHT/10)):
             precomp_free.add((xc,yc))
 print("Done...")
 # restore initial joint values
-robot = rob.Robot(filename)
 
 
+focus = 0 # Which joint is movable
+print_free = True # By default we print the free space in green
+automatic_free_space = False  # To generate a trajectory that scans all the joints values
+automatic_trajectory = False  # To draw a predefined trajectory (rectangle currently) starting at the good initial condition
+closed_loop_trajectory = False # Following the previous trajectory with arbitrary initial condition
 
-
-
-print_free = True 
-automatic_free_space = False
-automatic_trajectory = False
-closed_loop_trajectory = False
-current_free_space = []
-current_traj = []
+# Two trajectory to  display
+current_free_space = []  # Trajectory for scanning all the free space
+current_traj = [] # For open / closed loop trajectories
 
 auto_index = 0
 angle = 0
@@ -138,32 +141,6 @@ def update():
         robot.change_joint_value(focus,-1)
 
 
-    if automatic_free_space and False:
-        if auto_index == len(l_simple[cur_id]):
-            auto_index = 0
-            dir[cur_id] = not dir[cur_id]
-            new_id = randint(0,len(l_simple)-1)
-            while new_id == cur_id:
-                new_id = randint(0,len(l_simple)-1)
-            cur_id = new_id
-            print("curid ",cur_id)
-
-        if dir[cur_id]:
-            robot.joints[cur_id].data["value"] = l_simple[cur_id][auto_index]
-        else:
-            robot.joints[cur_id].data["value"] = l_simple[cur_id][len(l_simple[cur_id])-auto_index-1]
-        robot.compute_chain()
-        auto_index += 1
-        (x,y,_) = robot.end
-        x = (CENTER[0]+x*SCALE)
-        y = (CENTER[0]-y*SCALE)
-        current_free_space.append((x,y))
-
-
-
-
-
-
     if automatic_free_space:
         if auto_index == len(q[0]):
             auto_index = 0
@@ -193,11 +170,6 @@ def update():
             x = (CENTER[0]+x*SCALE)
             y = (CENTER[1]-y*SCALE)
             current_traj.append((x,y))
-    
-
-    
-
-    
 
 
 def draw():
