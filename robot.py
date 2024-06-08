@@ -22,10 +22,10 @@ class Robot:
             m,M = self.data["limits"]
             if value < m:
                 self.data["value"] = m
-                print(f"WARNING: value for joint {self.data["id"]} ({self.data["type"]}) has been set to the limit")
+                print(f"WARNING: value for joint {self.data['id']} ({self.data['type']}) has been set to the limit")
             elif value > M:
                 self.data["value"] = M
-                print(f"WARNING: value for joint {self.data["id"]} ({self.data["type"]}) has been set to the limit")
+                print(f"WARNING: value for joint {self.data['id']} ({self.data['type']}) has been set to the limit")
             else:
                 self.data["value"] = value
         def end_pose(self):
