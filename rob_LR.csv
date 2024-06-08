@@ -1,0 +1,9 @@
+type;       length; value;  limits;     id
+'rotule';   0;      pi/6;      [-pi,pi];   0
+'linear';   1;      0   ;      [-0.4,0.4]; 1
+'rotule';   0;      pi/2;      [-pi,pi];   2
+'linear';   1;      0   ;      [-0.4,0.4]; 0
+
+
+
+
