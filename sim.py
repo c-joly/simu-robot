@@ -117,19 +117,21 @@ def update():
         automatic_trajectory = not automatic_trajectory
         automatic_free_space = False
         closed_loop_trajectory = False
-        current_traj = []
-        frame_traj = 0
-        traj = q_ref
-    if pyxel.btnp(pyxel.KEY_C): #Toggle automatic trajectory
-        closed_loop_trajectory = not automatic_trajectory
+        if automatic_trajectory:
+            current_traj = []
+            frame_traj = 0
+            traj = q_ref
+    if pyxel.btnp(pyxel.KEY_C): #Toggle closed loop trajectory
+        closed_loop_trajectory = not closed_loop_trajectory
         automatic_free_space = False
         automatic_trajectory = False
         current_traj = []
         frame_traj = 0
-        q0 = [qi.data["value"] for qi in robot.joints]
-        closed_loop = solve_ivp(fun= u1,y0=q0,t_span=[0,tf],dense_output=True,rtol=1e-9,atol=1e-9)
-        q_closed_loop = np.array(closed_loop["sol"](t))
-        traj = q_closed_loop
+        if closed_loop_trajectory:
+            q0 = [qi.data["value"] for qi in robot.joints]
+            closed_loop = solve_ivp(fun= u1,y0=q0,t_span=[0,tf],dense_output=True,rtol=1e-9,atol=1e-9)
+            q_closed_loop = np.array(closed_loop["sol"](t))
+            traj = q_closed_loop
 
     if pyxel.btnp(pyxel.KEY_LEFT):
         focus = (focus-1) % len(robot.joints)
