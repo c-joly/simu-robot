@@ -23,7 +23,7 @@ GREEN = 11
 BLUE = 5
 
 # Load a robot
-filename = "rob_RRR.csv"
+filename = "rob_RR.csv"
 robot = rob.Robot(filename) # Robot for display
 robot_grad = rob.Robot(filename) # Garbage for computing (and prevent display to be affected)
 
@@ -244,39 +244,78 @@ def draw_precom_free(color = GREEN):
 # NUMERICAL STUFF
 
 def jacobian(x):
-    x = Variable(x)
-    direct = robot_grad.direct_Model(x)
-    for item in direct:
-        item.compute_gradients()
+    q1,q2 = x 
+    l1 = robot.joints[0].data["length"]
+    l2 = robot.joints[1].data["length"]
+    return [[-l1*sin(q1) - l2*sin(q1+q2) , -l2*sin(q1+q2)],
+            [ l1*cos(q1) + l2*cos(q1+q2) ,  l2*cos(q1+q2)]]
     
-    grad = [list(k.gradient) for k in direct]
-    jaco = np.row_stack(grad)
-    return jaco
 
 ######################
 # REF TRAJECTORY
 
 tf = 16
-speed = 0.4/2
+speed = 0.2
 def xd(t):
-    return 0
+    if t<4:
+        return 0
+    elif t<8:
+        return -speed*2
+    elif t<12:
+        return 0
+    elif t<16:
+        return speed*2
+    else:
+        return 0
 def yd(t):
-    return 0
+    if t < 4:
+        return -speed
+    elif t<8:
+        return 0
+    elif t<12:
+        return speed
+    else:
+        return 0
 
-x0,y0 = 2,1
+x0,y0 = 2,2
 def x_ref(t):
-    return x0
+    if t<4:
+        return x0 
+    elif t<8:
+        return x0-(t-4)*speed*2
+    elif t<12:
+        return x0 - 4*speed*2
+    elif t<16:
+        return x0 - 4*speed*2 + (t-12)*speed*2
+    else:
+        return x0 
 
 def y_ref(t):
-    return y0
+    if (t<=4):
+        return y0 - speed*t
+    elif (t<=8):
+        return y0 - speed*4
+    elif (t<=12):
+        return y0 - speed*4 + speed*(t-8)
+    else:   
+        return y0 
 
-q0 = [0,pi/2,-pi/2]
+q0 = [pi/2,-pi/2]
+
 def q_d(t,q):
-    return np.array(q)*0
-
-jacobian(np.array(q0))
+    X = np.array([xd(t),yd(t)])
+    J = jacobian(q)
+    
+    if (abs(np.linalg.det(J)) < 1e-16):
+        raise("Error")
+    else:
+        Jinv = np.linalg.inv(J) # Inverse matrix
+    return Jinv@X 
+   
 open_loop = solve_ivp(fun= q_d,y0=q0,t_span=[0,tf],dense_output=True,rtol=1e-6,atol=1e-6)
-t = np.arange(0,tf,1/100)
+
+fps = 100
+t = np.arange(0,tf,1/fps)
 q_ref = np.array(open_loop["sol"](t))
 
 ########################
